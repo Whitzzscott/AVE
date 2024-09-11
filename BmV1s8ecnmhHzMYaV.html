@@ -1,0 +1,660 @@
+<html><head><base href="https://websim.ai/" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLaMA RP Chat Application</title>
+<style>
+    :root {
+        --cream: #FFF5E1;
+        --vanilla: #F3E5AB;
+        --text-color: #4A4A4A;
+    }
+    
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: var(--cream);
+        color: var(--text-color);
+        margin: 0;
+        padding: 0;
+        line-height: 1.6;
+    }
+    
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 120px);
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .chat-header {
+        background-color: var(--vanilla);
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .header-buttons {
+        display: flex;
+        gap: 10px;
+    }
+
+    .chat-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+    }
+    
+    .message {
+        margin-bottom: 15px;
+        padding: 10px;
+        border-radius: 18px;
+        max-width: 70%;
+    }
+    
+    .user-message {
+        background-color: var(--vanilla);
+        color: var(--text-color);
+        align-self: flex-end;
+        margin-left: auto;
+    }
+    
+    .ai-message {
+        background-color: var(--cream);
+        color: var(--text-color);
+        align-self: flex-start;
+    }
+    
+    .input-area {
+        display: flex;
+        padding: 15px;
+        background-color: var(--cream);
+    }
+    
+    input[type="text"], textarea {
+        flex: 1;
+        padding: 10px;
+        border: 2px solid var(--vanilla);
+        border-radius: 20px;
+        font-size: 16px;
+        background-color: white;
+    }
+    
+    button {
+        background-color: var(--vanilla);
+        color: var(--text-color);
+        border: none;
+        padding: 10px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        font-weight: bold;
+    }
+    
+    button:hover {
+        background-color: #E6D69C;
+    }
+    
+    .customization-panel {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        align-items: start;
+        background-color: var(--cream);
+        border: 2px solid #FFB3BA;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+        box-shadow: 0 0 10px rgba(255, 0, 0, 0.1);
+    }
+    
+    .customization-panel textarea {
+        grid-column: span 2;
+        height: 100px;
+        resize: vertical;
+    }
+
+    .customization-panel .switch-container,
+    .customization-panel .slider-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .customization-panel button {
+        grid-column: span 2;
+        justify-self: center;
+    }
+    
+    .collapsible {
+        background-color: var(--vanilla);
+        color: var(--text-color);
+        cursor: pointer;
+        padding: 18px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 15px;
+    }
+    
+    .collapsible:after {
+        content: '\002B';
+        color: var(--text-color);
+        font-weight: bold;
+        float: right;
+        margin-left: 5px;
+    }
+    
+    .active:after {
+        content: "\2212";
+    }
+    
+    .collapsible-content {
+        padding: 0 18px;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.2s ease-out;
+        background-color: var(--cream);
+    }
+    
+    .character-modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+    }
+    
+    .modal-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        background-color: var(--cream);
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid var(--vanilla);
+        width: 80%;
+        max-width: 600px;
+        border-radius: 10px;
+    }
+    
+    .modal-content h2,
+    .modal-content h3,
+    .modal-content #characterList {
+        grid-column: span 2;
+    }
+    
+    .modal-content input,
+    .modal-content textarea {
+        grid-column: span 2;
+    }
+
+    .button-group {
+        grid-column: span 2;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+    
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+    }
+    
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--cream);
+        transition: .4s;
+        border-radius: 34px;
+    }
+    
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: var(--vanilla);
+        transition: .4s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+        background-color: var(--vanilla);
+    }
+    
+    input:checked + .slider:before {
+        transform: translateX(26px);
+        background-color: var(--cream);
+    }
+    
+    @media screen and (max-width: 768px) {
+        .chat-container {
+            height: calc(100vh - 40px);
+        }
+        
+        .message {
+            max-width: 90%;
+        }
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="header-buttons">
+                    <button id="showCharacters">Public Characters</button>
+                    <button id="deleteChatButton">Delete Chat</button>
+                </div>
+            </div>
+            <div class="chat-area" id="chatArea"></div>
+            <div class="input-area">
+                <input type="text" id="userInput" placeholder="Type your message...">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+        
+        <button class="collapsible">AI Customization Settings</button>
+        <div class="collapsible-content">
+            <div class="customization-panel">
+                <textarea id="systemInstructions" placeholder="System Instructions (RP-focused)">You are an AI designed to engage in roleplay (RP) scenarios. Always stay in character and respond accordingly to the user's prompts. Do not break the fourth wall or acknowledge that you are an AI unless it's part of the established RP scenario.</textarea>
+                <div class="select-container">
+                    <label for="modelSelect">LLaMA Model:</label>
+                    <select id="modelSelect">
+                        <option value="llama-7b">LLaMA 7B</option>
+                        <option value="llama-13b">LLaMA 13B</option>
+                        <option value="llama-30b">LLaMA 30B</option>
+                        <option value="llama-65b">LLaMA 65B</option>
+                    </select>
+                </div>
+                <div class="switch-container">
+                    <label class="switch">
+                        <input type="checkbox" id="nsfwToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <label for="nsfwToggle">NSFW Content</label>
+                </div>
+                <div class="slider-container">
+                    <label for="temperatureSlider">Temperature: </label>
+                    <input type="range" min="0" max="1" step="0.1" value="0.7" id="temperatureSlider">
+                    <span id="temperatureValue">0.7</span>
+                </div>
+                <div class="slider-container">
+                    <label for="topPSlider">Top P: </label>
+                    <input type="range" min="0" max="1" step="0.1" value="0.9" id="topPSlider">
+                    <span id="topPValue">0.9</span>
+                </div>
+                <div class="slider-container">
+                    <label for="topKSlider">Top K: </label>
+                    <input type="range" min="1" max="100" step="1" value="40" id="topKSlider">
+                    <span id="topKValue">40</span>
+                </div>
+                <div class="slider-container">
+                    <label for="contextLimitSlider">Context Limit: </label>
+                    <input type="range" min="512" max="4096" step="128" value="2048" id="contextLimitSlider">
+                    <span id="contextLimitValue">2048</span>
+                </div>
+                <button onclick="saveCustomizationSettings()">Save Settings</button>
+            </div>
+        </div>
+        
+        <div id="characterModal" class="character-modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Public Characters</h2>
+                <div id="characterList"></div>
+                <h3>Create New Character</h3>
+                <input type="text" id="characterName" placeholder="Character Name">
+                <textarea id="characterDescription" placeholder="Character Description"></textarea>
+                <div class="button-group">
+                    <button onclick="createCharacter()">Create Character</button>
+                    <button onclick="importCharacter()">Import Character</button>
+                    <button onclick="exportCharacter()">Export Character</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        let currentCharacter = null;
+        let chatHistory = [];
+
+        function createCharacter() {
+            const name = document.getElementById('characterName').value;
+            const description = document.getElementById('characterDescription').value;
+            
+            if (name && description) {
+                const character = { name, description };
+                
+                axios.post('/api/characters', character)
+                    .then(response => {
+                        alert('Character created and added to public repository!');
+                        loadPublicCharacters();
+                        saveCharactersToLocalStorage();
+                    })
+                    .catch(error => {
+                        console.error('Error creating character:', error);
+                        alert('Failed to create character. Please try again.');
+                    });
+            } else {
+                alert('Please provide both name and description for the character.');
+            }
+        }
+
+        function loadPublicCharacters() {
+            axios.get('/api/characters')
+                .then(response => {
+                    const characters = response.data;
+                    const characterList = document.getElementById('characterList');
+                    characterList.innerHTML = '';
+                    
+                    characters.forEach(character => {
+                        const characterElement = document.createElement('div');
+                        characterElement.className = 'character-item';
+                        characterElement.innerHTML = `
+                            <h3>${character.name}</h3>
+                            <p>${character.description}</p>
+                        `;
+                        characterElement.onclick = () => selectCharacter(character);
+                        characterList.appendChild(characterElement);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading public characters:', error);
+                });
+        }
+
+        function selectCharacter(character) {
+            currentCharacter = character;
+            alert(`Selected character: ${character.name}`);
+            saveCurrentCharacterToLocalStorage();
+            document.getElementById('characterModal').style.display = "none";
+        }
+        
+        function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const message = userInput.value.trim();
+            
+            if (message) {
+                displayMessage('user', message);
+                chatHistory.push({ sender: 'user', message });
+                
+                const payload = {
+                    message,
+                    character: currentCharacter,
+                    systemInstructions: document.getElementById('systemInstructions').value,
+                    model: document.getElementById('modelSelect').value,
+                    nsfw: document.getElementById('nsfwToggle').checked,
+                    temperature: parseFloat(document.getElementById('temperatureSlider').value),
+                    topP: parseFloat(document.getElementById('topPSlider').value),
+                    topK: parseInt(document.getElementById('topKSlider').value),
+                    contextLimit: parseInt(document.getElementById('contextLimitSlider').value)
+                };
+                
+                axios.post('/api/chat', payload)
+                    .then(response => {
+                        const aiResponse = response.data.response;
+                        displayMessage('ai', aiResponse);
+                        chatHistory.push({ sender: 'ai', message: aiResponse });
+                        saveChatHistoryToLocalStorage();
+                    })
+                    .catch(error => {
+                        console.error('Error sending message:', error);
+                        displayMessage('ai', 'Sorry, I encountered an error. Please try again.');
+                    });
+                
+                userInput.value = '';
+            }
+        }
+        
+        function displayMessage(sender, message) {
+            const chatArea = document.getElementById('chatArea');
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${sender}-message`;
+            messageElement.textContent = message;
+            chatArea.appendChild(messageElement);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function saveCustomizationSettings() {
+            const systemInstructions = document.getElementById('systemInstructions').value;
+            const model = document.getElementById('modelSelect').value;
+            const nsfw = document.getElementById('nsfwToggle').checked;
+            const temperature = document.getElementById('temperatureSlider').value;
+            const topP = document.getElementById('topPSlider').value;
+            const topK = document.getElementById('topKSlider').value;
+            const contextLimit = document.getElementById('contextLimitSlider').value;
+            
+            localStorage.setItem('systemInstructions', systemInstructions);
+            localStorage.setItem('model', model);
+            localStorage.setItem('nsfw', nsfw);
+            localStorage.setItem('temperature', temperature);
+            localStorage.setItem('topP', topP);
+            localStorage.setItem('topK', topK);
+            localStorage.setItem('contextLimit', contextLimit);
+            
+            alert('Customization settings saved!');
+        }
+
+        function loadSavedSettings() {
+            const savedInstructions = localStorage.getItem('systemInstructions');
+            const savedModel = localStorage.getItem('model');
+            const savedNsfw = localStorage.getItem('nsfw');
+            const savedTemperature = localStorage.getItem('temperature');
+            const savedTopP = localStorage.getItem('topP');
+            const savedTopK = localStorage.getItem('topK');
+            const savedContextLimit = localStorage.getItem('contextLimit');
+            
+            if (savedInstructions) {
+                document.getElementById('systemInstructions').value = savedInstructions;
+            }
+            if (savedModel) {
+                document.getElementById('modelSelect').value = savedModel;
+            }
+            if (savedNsfw) {
+                document.getElementById('nsfwToggle').checked = savedNsfw === 'true';
+            }
+            if (savedTemperature) {
+                document.getElementById('temperatureSlider').value = savedTemperature;
+                document.getElementById('temperatureValue').textContent = savedTemperature;
+            }
+            if (savedTopP) {
+                document.getElementById('topPSlider').value = savedTopP;
+                document.getElementById('topPValue').textContent = savedTopP;
+            }
+            if (savedTopK) {
+                document.getElementById('topKSlider').value = savedTopK;
+                document.getElementById('topKValue').textContent = savedTopK;
+            }
+            if (savedContextLimit) {
+                document.getElementById('contextLimitSlider').value = savedContextLimit;
+                document.getElementById('contextLimitValue').textContent = savedContextLimit;
+            }
+        }
+
+        function saveChatHistoryToLocalStorage() {
+            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+        }
+
+        function loadChatHistoryFromLocalStorage() {
+            const savedHistory = localStorage.getItem('chatHistory');
+            if (savedHistory) {
+                chatHistory = JSON.parse(savedHistory);
+                chatHistory.forEach(msg => displayMessage(msg.sender, msg.message));
+            }
+        }
+
+        function saveCurrentCharacterToLocalStorage() {
+            localStorage.setItem('currentCharacter', JSON.stringify(currentCharacter));
+        }
+
+        function loadCurrentCharacterFromLocalStorage() {
+            const savedCharacter = localStorage.getItem('currentCharacter');
+            if (savedCharacter) {
+                currentCharacter = JSON.parse(savedCharacter);
+                alert(`Loaded character: ${currentCharacter.name}`);
+            }
+        }
+
+        function importCharacter() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const character = JSON.parse(e.target.result);
+                        selectCharacter(character);
+                        alert('Character imported successfully!');
+                    } catch (error) {
+                        console.error('Error importing character:', error);
+                        alert('Failed to import character. Please check the file format.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function exportCharacter() {
+            if (currentCharacter) {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentCharacter));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", currentCharacter.name + ".json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            } else {
+                alert('Please select a character to export.');
+            }
+        }
+
+        function deleteChatHistory() {
+            if (confirm("Are you sure you want to delete the entire chat history?")) {
+                chatHistory = [];
+                localStorage.removeItem('chatHistory');
+                document.getElementById('chatArea').innerHTML = '';
+                alert('Chat history has been deleted.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            loadPublicCharacters();
+            loadSavedSettings();
+            loadChatHistoryFromLocalStorage();
+            loadCurrentCharacterFromLocalStorage();
+
+            const modal = document.getElementById("characterModal");
+            const btn = document.getElementById("showCharacters");
+            const span = document.getElementsByClassName("close")[0];
+
+            btn.onclick = function() {
+                modal.style.display = "block";
+            }
+
+            span.onclick = function() {
+                modal.style.display = "none";
+            }
+
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+
+            const deleteChatButton = document.getElementById('deleteChatButton');
+            deleteChatButton.onclick = deleteChatHistory;
+
+            const temperatureSlider = document.getElementById('temperatureSlider');
+            const temperatureValue = document.getElementById('temperatureValue');
+
+            temperatureSlider.oninput = function() {
+                temperatureValue.textContent = this.value;
+            }
+
+            const topPSlider = document.getElementById('topPSlider');
+            const topPValue = document.getElementById('topPValue');
+            topPSlider.oninput = function() {
+                topPValue.textContent = this.value;
+            }
+
+            const topKSlider = document.getElementById('topKSlider');
+            const topKValue = document.getElementById('topKValue');
+            topKSlider.oninput = function() {
+                topKValue.textContent = this.value;
+            }
+
+            const contextLimitSlider = document.getElementById('contextLimitSlider');
+            const contextLimitValue = document.getElementById('contextLimitValue');
+            contextLimitSlider.oninput = function() {
+                contextLimitValue.textContent = this.value;
+            }
+
+            const coll = document.getElementsByClassName("collapsible");
+            for (let i = 0; i < coll.length; i++) {
+                coll[i].addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    const content = this.nextElementSibling;
+                    if (content.style.maxHeight){
+                        content.style.maxHeight = null;
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
+                });
+            }
+        });
+
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
